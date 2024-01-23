@@ -1,0 +1,10 @@
+spring:
+  data:
+    mongodb:
+#      uri: mongodb://jony:111111@192.168.253.131:27017/test?authSource=admin
+      #uri等同于下面的配置
+      database: test
+      host: 127.0.0.1
+      port: 27017
+      username: admin
+      password: 123456
