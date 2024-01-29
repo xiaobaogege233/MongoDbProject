@@ -1,20 +1,25 @@
 package com.zchd.test;
 
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import com.zchd.entity.Employee;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.GroupOperation;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @ExtendWith(SpringExtension.class)
@@ -115,5 +120,92 @@ public class TestMongoDB {
         log.info("or 的第二种写法:{}",employeeList);
     }
 
+    // 排序
+    @Test
+    public void sort(){
+        // 根据年龄排序
+        Query query = new Query();
+        // 倒序
+        query.with(Sort.by(Sort.Order.desc("age")));
+        List<Employee> descList = mongoTemplate.find(query, Employee.class);
+        log.info("根据据年龄倒序排序结果:{}",descList);
+        // 升序
+        query = new Query();
+        query.with(Sort.by(Sort.Order.asc("age")));
+        List<Employee> ascList = mongoTemplate.find(query, Employee.class);
+        log.info("根据据年龄升序排序结果:{}",ascList);
+    }
 
+    // 分页
+    @Test
+    public void limit(){
+        long count = mongoTemplate.count(new Query(), Employee.class);
+        for (long i = 0; i < count; i += 2) {
+            Query query = new Query();
+            query.skip(i);
+            query.limit(2);
+            List<Employee> employees = mongoTemplate.find(query, Employee.class);
+            log.info("limit {},{} 的结果集:{}",i,2,employees);
+        }
+    }
+
+    // 更新一条数据
+    @Test
+    public void updateFirst(){
+        // 年龄大于100岁的第一位员工涨100
+        Query query = new Query(Criteria.where("age").gt(100));
+
+        Update update = new Update();
+        update.inc("salary",100.0);
+
+        UpdateResult updateResult = mongoTemplate.updateFirst(query, update, Employee.class);
+        log.info("更新第一条结果:{}",updateResult.wasAcknowledged());
+    }
+
+    // 更新符合条件的所有
+    @Test
+    public void updateMulti(){
+        // 年龄大于500岁的所有员工涨100
+        Query query = new Query(Criteria.where("age").gt(500));
+
+        Update update = new Update();
+        update.inc("salary",100.0);
+
+        UpdateResult updateResult = mongoTemplate.updateMulti(query, update, Employee.class);
+        log.info("更新符合所有条件的结果:{}",updateResult.wasAcknowledged());
+    }
+
+    // 没有符合条件的则插入
+    @Test
+    public void upsert(){
+        // 年龄大于500岁的所有员工涨100
+        Query query = new Query(Criteria.where("name").is("希儿"));
+
+        Update update = new Update();
+        update.set("salary",55.0);
+
+        UpdateResult updateResult = mongoTemplate.upsert(query, update, Employee.class);
+        log.info("更新插入结果:{}",updateResult.wasAcknowledged());
+    }
+
+    // 删除数据
+    @Test
+    public void delete(){
+        // 年龄大于500岁的所有员工涨100
+        DeleteResult deleteResult = mongoTemplate.remove(new Query(Criteria.where("name").is("希儿")), Employee.class);
+        log.info("删除结果:{}",deleteResult.wasAcknowledged());
+    }
+
+    // 年龄求和
+    @Test
+    public void aggregateSum(){
+        // 年龄求和
+        // 聚合 可能不止一个
+        GroupOperation groupOperation = Aggregation.group().sum("age").as("sum");
+        // 按顺序组装聚合
+        TypedAggregation<Employee> employeeTypedAggregation = Aggregation.newAggregation(Employee.class, groupOperation);
+        // 执行聚合 后面的映射可以用实体类
+        AggregationResults<Map> aggregate = mongoTemplate.aggregate(employeeTypedAggregation, Map.class);
+        log.info("年龄总和:{}",aggregate.getMappedResults());
+    }
 }
