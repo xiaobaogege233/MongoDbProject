@@ -216,4 +216,9 @@ public class TestMongoDB {
     public void test(){
         System.out.println(String.format("A%s",11111));
     }
+
+    @Test
+    public void testGitReset1(){
+        System.out.println(String.format("A%s",11111));
+    }
 }
