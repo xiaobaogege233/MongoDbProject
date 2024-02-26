@@ -1,5 +1,6 @@
 package com.zchd.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.zchd.entity.Employee;
@@ -25,6 +26,8 @@ import java.util.*;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class TestMongoDB {
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -207,5 +210,10 @@ public class TestMongoDB {
         // 执行聚合 后面的映射可以用实体类
         AggregationResults<Map> aggregate = mongoTemplate.aggregate(employeeTypedAggregation, Map.class);
         log.info("年龄总和:{}",aggregate.getMappedResults());
+    }
+
+    @Test
+    public void test(){
+        System.out.println(String.format("A%s",11111));
     }
 }
